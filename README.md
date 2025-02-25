@@ -1,6 +1,6 @@
 # Linear Attention and Beyond
 
-This repository contains the LaTeX source code for the talk series "Linear Attention and Beyond". Hopefully this repository will help train a LLM that generates Beamer slides better than I do.
+This repository contains the LaTeX source code for the talk series "Linear Attention and Beyond". Hopefully this repository will help train an LLM that generates Beamer slides better than I do.
 
 
 ## PDF files
@@ -12,7 +12,7 @@ The history pdf files are in the `pdf_history` folder.
 
 ## History
 
-### 2025-02-21 with Sasha Rush: [[video]](https://www.youtube.com/watch?v=d0HJvGSWw8A) [[pdf]](https://github.com/sustcsonglin/linear-attention-and-beyond-slides/pdf_history/20250221.pdf)
+### 2025-02-21 with Sasha Rush: [[video]](https://www.youtube.com/watch?v=d0HJvGSWw8A) [[pdf]](https://github.com/sustcsonglin/linear-attention-and-beyond-slides/blob/main/pdf_history/20250221.pdf)
 
 
 ## TODO
