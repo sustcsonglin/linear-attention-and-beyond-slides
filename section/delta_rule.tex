@@ -6,109 +6,47 @@
     Toward more expressive update rule: \\the delta rule
 \end{frame}
 
-\begin{frame}{Linear attention is secretly a fast weight programmer}
+\begin{frame}{Fast weight programming}
+    Before diving into the delta rule, let's first review fast weight programming, 
+    which will help us understand the delta rule and other test-time-trainers 
+    (TTT, Titans, Mesa layer, etc.). 
+\begin{tcolorbox}[colback=blue!5,colframe=blue!40,boxrule=0.5pt]
+    ``Fast weights provide a neurally plausible way of implementing the type of temporary storage that is required by working memory, while slow weights capture more permanent associations learned over many experiences.''
+    \small{ -- Geoffrey Hinton}
+\end{tcolorbox}
+
+
+
+
+\vspace{5mm}
+%     The hidden state matrix $\mathbf{S}_t$ is a fast weight matrix that is updated at each timestep:
+%     \begin{align*}
+%         \mathbf{S}_t &= \mathbf{S}_{t-1} + \mathbf{v}_t \mathbf{k}_t^\top
+%     \end{align*}
+%     \vspace{2mm}
+
+Recall the memory readout in linear attention:
 \[
     \mathbf{o}_t = \mathbf{S}_t \mathbf{q}_t
 \]
 We can think of the recurrent hidden state $\mathbf{S}_t$ as a fast weight matrix that maps input $\mathbf{q}_t$ to output $\mathbf{o}_t$ and is updated as it goes:
 \[\mathbf{S}_t = \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top\]
 
+
+
 \end{frame}
 
 
-% \begin{frame}{Gated Linear Attention: Motivation}
-%     \[
-%         \begin{aligned}
-%             \mathbf{S}_t &= \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top &&\in \mathbb{R}^{d \times d}  \\
-%             \mathbf{o}_t &= \mathbf{S}_t\mathbf{q}_t &&\in \mathbb{R}^d  
-%         \end{aligned}
-%         \]    
-% \begin{itemize}
-%     \item<1-> The cumulative sum tend to explode the hidden state, leading to unstable training and poor language modeling performance.
-%     \item<2-> RetNet uses data-independent decay, narrowing down the performance gap, but still underperforming Transformers.
-%     \item<3-> Forget gate has been the `missing piece' in linear attention.
-% \end{itemize}
-% \end{frame}
 
-% \begin{frame}{Gated Linear Attention: Full Form}
-%     \begin{align*}
-%         \mathbf{S}_t = \mathbf{G}_t \odot \mathbf{S}_{t-1} + \mathbf{v}_t \mathbf{k}_t^\top
-%     \end{align*}
-%     where $\mathbf{G}_t = \boldsymbol{\beta_t}\boldsymbol{\alpha_t}^\top$ is the gate matrix.
-% \begin{itemize}
-%     \item Both input $\mathbf{v}_t \mathbf{k}_t^\top$ and gate matrix $\mathbf{G}_t$ are in outer product form
-%     \item This structure enables efficient computation via matrix multiplication
-% \end{itemize}
-% \end{frame}
-
-% \begin{frame}{Gated Linear Attention: Simplified Form}
-    
-%     When $G_t = \mathbf{1} \boldsymbol{\alpha_t}^\top$:
-
-%     \begin{align*}
-%       \mathbf{O}_t =   ((\mathbf{Q} \odot \mathbf{A}) (\mathbf{K} \odot \mathbf{A}^{-1}) \odot \mathbf{M}) \mathbf{V}
-%     \end{align*}
-%     where $\mathbf{A}_t = \bigodot_{i=1}^t \alpha_i $ is the cumulative product of decay, and $\mathbf{A}^{-1}$ denotes element-wise inverse (not matrix inverse).
-% \\
-% \vspace{2mm}
-% Balanced between training efficiency and expressiveness. Examples:
-% \begin{itemize}
-%     \item  GLA (\cite{gla})
-%     \item  HGRN2 (\cite{hgrn2})
-%     \item  RWKV6 (\cite{rwkv6})
-%     \item  GSA (\cite{zhang2024gated})
-%     \item  MetaLA (\cite{meta_la})
-%     \item  ...
-% \end{itemize}
-
-
-% \end{frame}
-
-% \begin{frame}{Gated Linear Attention: Simplest Form}
-%     When $G_t = \alpha_t \mathbf{1} \mathbf{1}^\top$:
-%     \begin{align*}
-%         \mathbf{O}_t &= \left(\mathbf{Q} \mathbf{K}^\top \odot \mathbf{D} \right)\mathbf{V}, \\
-%         \mathbf{D}_{ij} &= \begin{cases}
-%             \prod_{k=j+1}^{i} \alpha_k & \text{if } i \geq j \\
-%             0 & \text{otherwise}
-%         \end{cases}
-%     \end{align*}
-%     Maximum training efficiency, but limited expressiveness. Examples:
-%     \begin{itemize}
-%         \item Mamba2 (\cite{mamba2})
-%         \item xLSTM (\cite{beck2024xlstm})
-%         \item Gated RetNet (\cite{Sun2024YouOC})
-%     \end{itemize}
-
-
-% \end{frame}
-
-
-
-\begin{frame}{Linear attention as a fast weight programming perspective}
+\begin{frame}{Linear attention is secretly a fast weight programmer}
     \input{figure/fast_weight.tex}
         
-    % - Implements a form of working memory    
-%     The hidden state matrix $\mathbf{S}_t$ is a fast weight matrix that is updated at each timestep:
-%     \begin{align*}
-%         \mathbf{S}_t &= \mathbf{S}_{t-1} + \mathbf{v}_t \mathbf{k}_t^\top
-%     \end{align*}
-%     \vspace{2mm}
-    
-%     The fast weight matrix is used to map inputs $\mathbf{q}_t$ into outputs $\mathbf{o}_t$:
-% \begin{align*}
-%     \mathbf{o}_t = \mathbf{S}_t \mathbf{q}_t
 \vspace{-4mm}
 \begin{itemize}
     \item {\color{red}\textbf{Fast Weight}}: $\mathbf{S}_t$ maps $\mathbf{q}_t$ to $\mathbf{o}_t$, updated dynamically during inference  for rapid adaptation.
     \item {\color{red}\textbf{Slow Weight}}: $\mathbf{W}_q$, $\mathbf{W}_k$, and $\mathbf{W}_v$ are fixed during inference and only updated during training (e.g., via gradient descent).
 \end{itemize}
 
-
-% \begin{quote}
-%     ``Fast weights provide a neurally plausible way of implementing the type of temporary storage that is required by working memory, while slow weights capture more permanent associations learned over many experiences.''
-%     \small{ -- Geoffrey Hinton}
-% \end{quote}
 
 
 \end{frame}
@@ -218,89 +156,8 @@ We can think of the recurrent hidden state $\mathbf{S}_t$ as a fast weight matri
             \item {\color{red} Better numerical stability}: the norm of $\mathbf{S}_t$ is controlled.
             \item {\color{red} Better in-context associative recall}: directly optimizes key-value association prediction (\cite{Liu2024LonghornSS})
         \end{itemize}
-
-
-
-
-    % Online regression loss is better for predicting $\mathbf{v}_t$ from $\mathbf{k}_t$ and $\mathbf{S}_{t-1}$.
-    %     $$\mathcal{L}_t(\mathbf{S}) = \frac{1}{2}\|\mathbf{S} \mathbf{k}_t - \mathbf{v}_t\|^2$$
-    %     \vspace{2mm}
-    %     Performing a single step of SGD:
-    % $$\begin{aligned}
-    % \mathbf{S}_t &= \mathbf{S}_{t-1} - \beta_t \nabla \mathcal{L}_t(\mathbf{S}_{t-1}) \\
-    % &= \mathbf{S}_{t-1} - \beta_t \left(\mathbf{S}_{t-1} \mathbf{k}_t - \mathbf{v}_t\right) \mathbf{k}_t^\top
-    % \end{aligned}$$
-    % \begin{itemize}
-    %     \item When $\beta_t \in (0, 1)$, the DeltaNet update rule (\cite{Schlag2021LinearTA, yang2024parallelizing}) is recovered.  
-    % \end{itemize}
 \end{frame}
 
-% \begin{frame}{Comparison between DeltaNet and Linear Attention}
-%     \begin{tikzpicture}
-%         % Title
-%         % Left diagram
-%         \begin{scope}[xshift=-4cm]
-%             \node at (0,3.5) {Maximize ``alignment''};
-%             \node at (0,3) {= Minimize angle + enlarge $|Mk|$};
-            
-%             % Define coordinates and draw vectors with names
-%             \coordinate (O) at (0,0);
-%             \draw[->,purple,thick] (O) -- (1.75,1.75) coordinate (Mk) node[above] {$\mathbf{S}_{t-1}\mathbf{k}_t$};
-%             \draw[->,green,thick] (O) -- (1.5,0.8) coordinate (v) node[right] {$\mathbf{v}_t$};
-            
-%             % Add dashed extension to show enlarging norm
-%             \draw[->, purple,dashed] (O) -- (3,2.1) node[above] {$\mathbf{S}_{t}\mathbf{k}_t$};
-%             % \node[right] at (2.0,2.0) {$\uparrow$};
-    
-%             % Coordinate axes
-%             \draw[dashed] (-1,0) -- (2,0);
-%             \draw[dashed] (0,-1) -- (0,2);
-            
-%             % Draw angle arc
-%             \pic [draw, angle radius=5mm] {angle = v--O--Mk};
-            
-%             % Loss function
-%             \node at (0,-1.5) {$\text{loss}_M(k,v) = -\langle \mathbf{S}_{t-1}\mathbf{k}_t, \mathbf{v}_t \rangle$};
-%         \end{scope}
-        
-%         % Right diagram
-%         \begin{scope}[xshift=2cm]
-%             \node at (0,3.5) {Minimize (Euclidean) distance};
-            
-%             \coordinate (O) at (0,0);
-%             \draw[dashed] (-1,0) -- (2,0);
-%             \draw[dashed] (0,-1) -- (0,2);
-            
-%             % Original vectors
-%             \draw[->,purple,thick] (O) -- (1.75,1.75) coordinate (Mk1) node[above] {$\mathbf{S}_{t-1}\mathbf{k}_t$};
-%             \draw[->,green,thick] (O) -- (1.5,0.8) coordinate (v) node[right] {$\mathbf{v}_t$};
-            
-%             % Draw the distance line
-%             \draw (1.75,1.75) -- (1.5,0.8);
-            
-%             % Dashed vector halfway between Mk1 and v
-%             \draw[->, purple,dashed] (O) -- (1.6,1.3) node[right] {$\mathbf{S}_{t}\mathbf{k}_t$};
-            
-%             \node at (0,-1.5) {$\mathcal{L}_{S}(k,v) = \frac{1}{2}\|\mathbf{S}_{t-1}\mathbf{k}_t - \mathbf{v}_t\|^2$};
-%         \end{scope}
-%     \end{tikzpicture}
-%     \begin{itemize}
-%         \item Linear attention's objective encourages expanding the norm of $\mathbf{S}_t$, leading to numerical instabilities. 
-%         \begin{itemize}
-%             \item Weight decay (e.g., in Mamba2) could mitigate this issue.
-%         \end{itemize}
-%         \item DeltaNet's objective encourages minimizing the distance between $\mathbf{S}_t \mathbf{k}_t$ and $\mathbf{v}_t$, which is more stable.
-%     \end{itemize}
-% \end{frame}
-% \begin{frame}{DeltaNet performs better on in-context associative recall}
-%     \begin{block}{Associative recall}
-%         \begin{quote}
-%             \small ``In psychology, associative memory is {\color{red} \textbf{the ability to learn and remember relationships between unrelated items}}, such as remembering someone's name when seeing their face. This allows us to form connections between distinct pieces of information.''
-%         \end{quote}
-%     \end{block}
-    
-%     DeltaNet learns associations through online linear regression: minimizing $\|\mathbf{S}\mathbf{k}_i - \mathbf{v}_i\|^2$ directly optimizes key-value prediction (\cite{Liu2024LonghornSS}).
-% \end{frame}
 
 \begin{frame}{In-context associative recall}
     \begin{block}{\scriptsize Multi-Query Associative Recall (MQAR, \cite{zoology})}
@@ -317,28 +174,6 @@ We can think of the recurrent hidden state $\mathbf{S}_t$ as a fast weight matri
     \vspace{-1mm}
     \input{figure/mqar.tex}
 \end{frame}
-% \begin{frame}{DeltaNet performs better on in-context associative recall: MAD results}
-%     MAD (\cite{poli_mechanistic_2024}) serves as a more comprehensive benchmark suite than MQAR for evaluating in-context associative recall and learning.
-%     \begin{table}
-% \resizebox{\linewidth}{!}{
-% \begin{tabular}{l|*{6}{c}|c}
-% \toprule
-% \textbf{Model} & \textbf{Compress} & \cellcolor{red!15}\textbf{Fuzzy} & \cellcolor{red!15}\textbf{In-Context} & \textbf{Memorize} & \cellcolor{red!15}\textbf{Noisy} & \cellcolor{red!15}\textbf{Selective} & \textbf{Average} \\
-% & & \cellcolor{red!15}\textbf{Recall} & \cellcolor{red!15}\textbf{Recall} & & \cellcolor{red!15}\textbf{Recall} & \cellcolor{red!15}\textbf{Copy} & \\
-% \midrule
-% Transformer & 51.6 & \cellcolor{red!15}29.8 & \cellcolor{red!15}94.1 & 85.2 & \cellcolor{red!15}86.8 & \cellcolor{red!15}99.6 & 74.5 \\
-% Hyena & 45.2 & \cellcolor{red!15}7.9 & \cellcolor{red!15}81.7 & 89.5 & \cellcolor{red!15}78.8 & \cellcolor{red!15}93.1 & 66.0 \\
-% Multihead Hyena \hspace{4mm} & 44.8 & \cellcolor{red!15}14.4 & \cellcolor{red!15}99.0 & 89.4 & \cellcolor{red!15}98.6 & \cellcolor{red!15}93.0 & 73.2 \\
-% Mamba & 52.7 & \cellcolor{red!15}6.7 & \cellcolor{red!15}90.4 & 89.5 & \cellcolor{red!15}90.1 & \cellcolor{red!15}86.3 & 69.3 \\
-% GLA & 38.8 & \cellcolor{red!15}6.9 & \cellcolor{red!15}80.8 & 63.3 & \cellcolor{red!15}81.6 & \cellcolor{red!15}88.6 & 60.0 \\
-% DeltaNet & 42.2 & \cellcolor{red!15}\textbf{35.7} & \cellcolor{red!15}\textbf{100} & 52.8 & \cellcolor{red!15}\textbf{100} & \cellcolor{red!15}\textbf{100} & 71.8 \\
-% \bottomrule
-% \end{tabular}
-% }
-% \caption{MAD benchmark results. DeltaNet achieves the best performance in in-context associative recall and copy tasks, however, it somehow underperforms in memorization and compression tasks.}
-% \label{tab:mad_results}
-% \end{table}
-% \end{frame}
 
 
 \begin{frame}{Transformers and SSMs in TC$^0$}
