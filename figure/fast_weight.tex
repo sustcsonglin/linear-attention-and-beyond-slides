@@ -1,0 +1,124 @@
+\resizebox{\linewidth}{!}{
+    \begin{tikzpicture}[
+        node distance=4.5cm,
+        box/.style={
+            rectangle,
+            draw,
+            minimum height=1cm,
+            minimum width=1.2cm,
+            thick,
+            fill=blue!10
+        },
+        arrow/.style={->,>=latex,thick},
+        small box/.style={
+            rectangle,
+            draw,
+            minimum width=0.8cm,
+            minimum height=0.8cm,
+            inner sep=2pt,
+            font=\sffamily,
+            fill=orange!10
+        },
+        values box/.style={
+            rectangle,
+            draw,
+            pattern=north west lines,
+            pattern color=green!40,
+            fill=green!10,
+            minimum size=0.8cm,
+            thick
+        },
+        pink box/.style={
+            rectangle,
+            draw=pink!80!red,
+            thick,
+            minimum height=1.2cm,
+            minimum width=3cm,
+            fill=pink!20,
+        },
+        weight box/.style={
+            rectangle,
+            draw=blue!60,
+            thick,
+            minimum height=1cm,
+            minimum width=8cm,
+            align=center,
+            fill=blue!5
+        },
+        fast weight box/.style={
+            rectangle,
+            draw=orange,
+            thick,
+            fill=orange,
+            fill opacity=0.3,
+            draw opacity=0.5,
+            text opacity=1
+        }
+    ]
+    
+    \begin{scope}[on background layer]
+        % 状态框
+        \node (M1) at (3, 0) {};
+        \node[box] (M2) at (4.5,0) {$\mathbf{S}_{t-1}$};
+        \node[box] (M3) at (9,0) {$\mathbf{S}_{t}$};
+        \node[box] (M4) at (13.5,0) {$\mathbf{S}_{i+1}$};
+        
+        % Fast weights包裹框
+        \path (2.5, 0) -- (M4.south east) node[midway,yshift=-0.5cm] (note) {\small\textbf{\textcolor{orange}{(rapidly changes at each time step)}}};
+        \node[fast weight box,fit=(M1)(M2)(M3)(M4)(note),inner sep=10pt] (fastbox) {};
+    \end{scope}
+    
+    % 输入层
+    \node[left] at (0.6,6) {\sffamily\Large\bfseries inputs}; 
+    \node[box] (X1) at (4.5,6) {$\mathbf{x}_{t-1}$};
+    \node[box] (X2) at (9,6) {$\mathbf{x}_t$};
+    \node[box] (X3) at (13.5,6) {$\mathbf{x}_{t+1}$};
+    
+    % Slow weights层
+    \node[left] at (0.6,4) {\sffamily\Large\bfseries slow weights};
+    \node[weight box] (W) at (9,4) {$\mathbf{W}_q, \mathbf{W}_k, \mathbf{W}_v$\\\small(shared across time steps)};
+    
+    % 状态间连接
+    \draw[arrow] (1.5,0) -- (M2) coordinate[pos=0.95] (M12);
+    \draw[arrow] (M2) -- (M3) coordinate[pos=0.95] (M23);
+    \draw[arrow] (M3) -- (M4) coordinate[pos=0.95] (M34);
+    \draw[arrow] (M4) -- (15.5,0) coordinate[pos=0.95];
+    
+    % KVQ组
+    \foreach \x/\pos/\endpoint/\i/\m in {4.5/a/M12/{t-1}/M2,9/b/M23/t/M3,13.5/c/M34/{t+1}/M4} {
+        \node[pink box] (PB\pos) at (\x,2) {};
+        \node[small box] (K\pos) at ($(\x,2)+(-0.8,0)$) {$\mathbf{k}_{\i}$};
+        \node[small box] (V\pos) at (\x,2) {$\mathbf{v}_{\i}$};
+        \node[small box] (Q\pos) at ($(\x,2)+(0.8,0)$) {$\mathbf{q}_{\i}$};
+        
+        \draw[->,thick] (K\pos.south) to[bend right=45] (\endpoint);
+        \draw[->,thick] (V\pos.south) to[bend right=25] (\endpoint);
+        \draw[->,thick] (Q\pos.south) to[out=-90,in=90] (\m.north);
+    }
+    
+    % 输入到权重的连接
+    \foreach \x in {4.5,9,13.5} {
+        \node (X) at (\x,6) {};
+        \node (PB) at (\x,2) {};
+        \draw[->,thick,blue!60] (X) to[out=-60,in=90] (W);
+        \draw[->,thick,blue!60] (W) to[out=-90,in=90] (PB);
+    }
+    
+    % 输出层
+    \node[values box] (V2) at (4.5,-2.2) {$\mathbf{o}_{t-1}$};
+    \node[values box] (V3) at (9,-2.2) {$\mathbf{o}_{t}$};
+    \node[values box] (V4) at (13.5,-2.2) {$\mathbf{o}_{t+1}$};
+    
+    % 标签
+    \node[left] at (0.6,2) {\sffamily\Large\bfseries queries/keys/values};
+    \node[left] at (0.6,-2.2) {\sffamily\Large\bfseries outputs};
+    \node[left] at (0.6,0) {\sffamily\Large\bfseries fast weights};
+    
+    % 输出连接
+    \draw[arrow] (M2) -- (V2);
+    \draw[arrow] (M3) -- (V3);
+    \draw[arrow] (M4) -- (V4);
+    
+    \end{tikzpicture}
+    
+    }

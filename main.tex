@@ -1,0 +1,130 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Welcome to Overleaf --- just edit your LaTeX on the left,
+% and we'll compile it for you on the right. If you open the
+% 'Share' menu, you can invite other users to edit at the same
+% time. See www.overleaf.com/learn for more info. Enjoy!
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass{beamer}
+
+% \newcommand{\customcite}[1]{\citeauthor{#1} et al. 2023}
+% \newcommand{\customcite24}[1]{\citeauthor{#1} et al. 2024}
+
+\setbeamercovered{transparent=5}
+\usepackage{colortbl} % Add this to preamble
+
+\setbeamercolor{block title}{use=structure,fg=white,bg=structure.fg!75!black}
+\setbeamercolor{block body}{parent=normal text,use=block title,bg=block title.bg!10!}
+
+\setbeamercolor{block title alerted}{use=alerted text,fg=white,bg=alerted text.fg!75!black}
+\setbeamercolor{block title example}{use=example text,fg=white,bg=example text.fg!75!black}
+
+\setbeamercolor{block body alerted}{parent=normal text,use=block title alerted,bg=block title alerted.bg!10!bg}
+\setbeamercolor{block body example}{parent=normal text,use=block title example,bg=block title example.bg!10!bg}
+\setbeamertemplate{navigation symbols}{}
+
+\definecolor{yellowgreen}{RGB}{154,205,50}    % 标准黄绿色
+\definecolor{limeyellow}{RGB}{185,215,40}     % 偏黄的黄绿色
+\definecolor{yellowgreenyellow}{RGB}{173,255,47}    % 亮黄绿色
+
+
+\newcommand{\Simley}[1]{%
+\begin{tikzpicture}[scale=0.25]
+    \newcommand*{\SmileyRadius}{1.0}%
+    \draw [fill=brown!10] (0,0) circle (\SmileyRadius)% outside circle
+        %node [yshift=-0.22*\SmileyRadius cm] {\tiny #1}% uncomment this to see the smile factor
+        ;  
+
+    \pgfmathsetmacro{\eyeX}{0.5*\SmileyRadius*cos(30)}
+    \pgfmathsetmacro{\eyeY}{0.5*\SmileyRadius*sin(30)}
+    \draw [fill=cyan,draw=none] (\eyeX,\eyeY) circle (0.15cm);
+    \draw [fill=cyan,draw=none] (-\eyeX,\eyeY) circle (0.15cm);
+
+    \pgfmathsetmacro{\xScale}{2*\eyeX/180}
+    \pgfmathsetmacro{\yScale}{1.0*\eyeY}
+    \draw[color=red, domain=-\eyeX:\eyeX]   
+        plot ({\x},{
+            -0.1+#1*0.15 % shift the smiley as smile decreases
+            -#1*1.75*\yScale*(sin((\x+\eyeX)/\xScale))-\eyeY});
+\end{tikzpicture}%
+}%
+
+
+\usepackage{fontawesome5}
+\usepackage{hyperref}
+\usepackage[dvipsnames]{xcolor}
+
+% \usepackage[backend=biber, style=chem-angew, safeinputenc]{biblatex}
+\usepackage{wasysym}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} % for professional tables
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage{amsthm}
+\usepackage{textcomp}
+\usepackage{multirow}
+\usepackage{mathtools}
+% \usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+% \usepackage[noend]{algpseudocode}
+\usepackage{listings,multicol}  % <--- multicol only required, if the multicols= option shall be used
+\usepackage[backend=bibtex,style=authoryear]{biblatex}
+\addbibresource{main.bib}
+
+
+
+\newcommand{\github}[1]{%
+   \href{#1}{\faGithubSquare}%
+}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,
+                positioning,
+                shadows,
+                angles, quotes,
+                patterns}
+\usepackage{pifont}
+\usepackage{pgfplots}
+\usepackage{tcolorbox}
+
+\usetikzlibrary{shapes.multipart,positioning}
+
+\usetikzlibrary{shapes, arrows, arrows.meta, fit,backgrounds, positioning, calc}
+
+
+\newcommand\hcancel[2][black]{\setbox0=\hbox{$#2$}%
+\rlap{\raisebox{.3\ht0}{\textcolor{#1}{\rule{\wd0}{1pt}}}}#2} 
+
+
+%Information to be included in the title page:
+\title{Linear Attention and Beyond}
+\author{Songlin Yang}
+\institute{MIT CSAIL}
+\vspace{3mm}
+\date{February 2025}
+
+\begin{document}
+\include{section/intro}
+\include{section/linear_attn}
+\include{section/linear_attn_with_decay}
+\include{section/delta_rule}
+\include{section/beyond}
+
+\begin{frame}{}
+\begin{center}
+\LARGE Thanks!
+\end{center}
+\end{frame}
+\begin{frame}[allowframebreaks]
+        \frametitle{References}
+        \printbibliography
+\end{frame}
+\end{document}
+

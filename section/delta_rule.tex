@@ -1,0 +1,546 @@
+
+
+\begin{frame}{}
+    \centering
+    \LARGE
+    Toward more expressive update rule: \\the delta rule
+\end{frame}
+
+\begin{frame}{Linear attention is secretly a fast weight programmer}
+\[
+    \mathbf{o}_t = \mathbf{S}_t \mathbf{q}_t
+\]
+We can think of the recurrent hidden state $\mathbf{S}_t$ as a fast weight matrix that maps input $\mathbf{q}_t$ to output $\mathbf{o}_t$ and is updated as it goes:
+\[\mathbf{S}_t = \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top\]
+
+\end{frame}
+
+
+% \begin{frame}{Gated Linear Attention: Motivation}
+%     \[
+%         \begin{aligned}
+%             \mathbf{S}_t &= \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top &&\in \mathbb{R}^{d \times d}  \\
+%             \mathbf{o}_t &= \mathbf{S}_t\mathbf{q}_t &&\in \mathbb{R}^d  
+%         \end{aligned}
+%         \]    
+% \begin{itemize}
+%     \item<1-> The cumulative sum tend to explode the hidden state, leading to unstable training and poor language modeling performance.
+%     \item<2-> RetNet uses data-independent decay, narrowing down the performance gap, but still underperforming Transformers.
+%     \item<3-> Forget gate has been the `missing piece' in linear attention.
+% \end{itemize}
+% \end{frame}
+
+% \begin{frame}{Gated Linear Attention: Full Form}
+%     \begin{align*}
+%         \mathbf{S}_t = \mathbf{G}_t \odot \mathbf{S}_{t-1} + \mathbf{v}_t \mathbf{k}_t^\top
+%     \end{align*}
+%     where $\mathbf{G}_t = \boldsymbol{\beta_t}\boldsymbol{\alpha_t}^\top$ is the gate matrix.
+% \begin{itemize}
+%     \item Both input $\mathbf{v}_t \mathbf{k}_t^\top$ and gate matrix $\mathbf{G}_t$ are in outer product form
+%     \item This structure enables efficient computation via matrix multiplication
+% \end{itemize}
+% \end{frame}
+
+% \begin{frame}{Gated Linear Attention: Simplified Form}
+    
+%     When $G_t = \mathbf{1} \boldsymbol{\alpha_t}^\top$:
+
+%     \begin{align*}
+%       \mathbf{O}_t =   ((\mathbf{Q} \odot \mathbf{A}) (\mathbf{K} \odot \mathbf{A}^{-1}) \odot \mathbf{M}) \mathbf{V}
+%     \end{align*}
+%     where $\mathbf{A}_t = \bigodot_{i=1}^t \alpha_i $ is the cumulative product of decay, and $\mathbf{A}^{-1}$ denotes element-wise inverse (not matrix inverse).
+% \\
+% \vspace{2mm}
+% Balanced between training efficiency and expressiveness. Examples:
+% \begin{itemize}
+%     \item  GLA (\cite{gla})
+%     \item  HGRN2 (\cite{hgrn2})
+%     \item  RWKV6 (\cite{rwkv6})
+%     \item  GSA (\cite{zhang2024gated})
+%     \item  MetaLA (\cite{meta_la})
+%     \item  ...
+% \end{itemize}
+
+
+% \end{frame}
+
+% \begin{frame}{Gated Linear Attention: Simplest Form}
+%     When $G_t = \alpha_t \mathbf{1} \mathbf{1}^\top$:
+%     \begin{align*}
+%         \mathbf{O}_t &= \left(\mathbf{Q} \mathbf{K}^\top \odot \mathbf{D} \right)\mathbf{V}, \\
+%         \mathbf{D}_{ij} &= \begin{cases}
+%             \prod_{k=j+1}^{i} \alpha_k & \text{if } i \geq j \\
+%             0 & \text{otherwise}
+%         \end{cases}
+%     \end{align*}
+%     Maximum training efficiency, but limited expressiveness. Examples:
+%     \begin{itemize}
+%         \item Mamba2 (\cite{mamba2})
+%         \item xLSTM (\cite{beck2024xlstm})
+%         \item Gated RetNet (\cite{Sun2024YouOC})
+%     \end{itemize}
+
+
+% \end{frame}
+
+
+
+\begin{frame}{Linear attention as a fast weight programming perspective}
+    \input{figure/fast_weight.tex}
+        
+    % - Implements a form of working memory    
+%     The hidden state matrix $\mathbf{S}_t$ is a fast weight matrix that is updated at each timestep:
+%     \begin{align*}
+%         \mathbf{S}_t &= \mathbf{S}_{t-1} + \mathbf{v}_t \mathbf{k}_t^\top
+%     \end{align*}
+%     \vspace{2mm}
+    
+%     The fast weight matrix is used to map inputs $\mathbf{q}_t$ into outputs $\mathbf{o}_t$:
+% \begin{align*}
+%     \mathbf{o}_t = \mathbf{S}_t \mathbf{q}_t
+\vspace{-4mm}
+\begin{itemize}
+    \item {\color{red}\textbf{Fast Weight}}: $\mathbf{S}_t$ maps $\mathbf{q}_t$ to $\mathbf{o}_t$, updated dynamically during inference  for rapid adaptation.
+    \item {\color{red}\textbf{Slow Weight}}: $\mathbf{W}_q$, $\mathbf{W}_k$, and $\mathbf{W}_v$ are fixed during inference and only updated during training (e.g., via gradient descent).
+\end{itemize}
+
+
+% \begin{quote}
+%     ``Fast weights provide a neurally plausible way of implementing the type of temporary storage that is required by working memory, while slow weights capture more permanent associations learned over many experiences.''
+%     \small{ -- Geoffrey Hinton}
+% \end{quote}
+
+
+\end{frame}
+
+\begin{frame}{The choice of update rule}
+    \begin{figure}
+        \centering
+        \includegraphics[width=.5\linewidth]{figure/hebbian.png}
+        \caption{The principle of Hebbian learning.}
+    \end{figure}
+    \begin{itemize}
+        \item Hebbian update rule: $\mathbf{S}_t = \mathbf{S}_{t-1} + \mathbf{v}_t \mathbf{k}_t^\top$
+        \item Delta rule: $\mathbf{S}_t = \mathbf{S}_{t-1} - \beta_t \left(\mathbf{S}_{t-1} \mathbf{k}_t - \mathbf{v}_t\right) \mathbf{k}_t^\top$
+        \item ...
+    \end{itemize}
+    Both Hebbian and delta update rules can be regarded as optimizing online learning objective via {\color{red}test-time SGD}.
+
+
+\end{frame}
+\begin{frame}{Linear Attention: Test-Time Objective}
+    \begin{center}
+    \begin{tikzpicture}
+        \begin{scope}[xshift=3cm]
+            \node at (0,3.5) {Maximize alignment};
+            \node at (0,3) {= Minimize angle difference + enlarge $|\mathbf{S}\mathbf{k}|$};
+            
+            \coordinate (O) at (0,0);
+            \draw[->,purple,thick] (O) -- (1.75,1.75) coordinate (Mk) node[above] {$\mathbf{S}_{t-1}\mathbf{k}_t$};
+            \draw[->,blue,thick] (O) -- (1.5,0.8) coordinate (v) node[right] {$\mathbf{v}_t$};
+            
+            \draw[->, purple,dashed] (O) -- (3,2.1) node[above] {$\mathbf{S}_{t}\mathbf{k}_t$};
+    
+            \draw[dashed] (-1,0) -- (2,0);
+            \draw[dashed] (0,-1) -- (0,2);
+            
+            \pic [draw, angle radius=5mm] {angle = v--O--Mk};
+        \end{scope}
+    \end{tikzpicture}
+    \end{center}
+\vspace{-2mm}
+    \begin{align*}
+\hspace*{-1cm}\textbf{Objective: } & \mathcal{L}_t(\mathbf{S}) = -\langle \mathbf{S} \mathbf{k}_t, \mathbf{v}_t \rangle \\[1ex]
+\hspace*{-1cm}\textbf{SGD update: } & \mathbf{S}_t = \mathbf{S}_{t-1} - \beta_t \nabla \mathcal{L}_t(\mathbf{S}_{t-1}) = \mathbf{S}_{t-1} + \beta_t \mathbf{v}_t \mathbf{k}_t^\top
+    \end{align*}
+    \vspace{-6mm}
+
+\end{frame}
+
+\begin{frame}{Linear Attention: Test-Time Objective}
+    \begin{center}
+        \begin{tikzpicture}
+            \begin{scope}[xshift=3cm]
+                \node at (0,3.5) {Maximize alignment};
+                \node at (0,3) {= Minimize angle difference + enlarge $|\mathbf{S}\mathbf{k}|$};
+                
+                \coordinate (O) at (0,0);
+                \draw[->,purple,thick] (O) -- (1.75,1.75) coordinate (Mk) node[above] {$\mathbf{S}_{t-1}\mathbf{k}_t$};
+                \draw[->,blue,thick] (O) -- (1.5,0.8) coordinate (v) node[right] {$\mathbf{v}_t$};
+                
+                \draw[->, purple,dashed] (O) -- (3,2.1) node[above] {$\mathbf{S}_{t}\mathbf{k}_t$};
+        
+                \draw[dashed] (-1,0) -- (2,0);
+                \draw[dashed] (0,-1) -- (0,2);
+                
+                \pic [draw, angle radius=5mm] {angle = v--O--Mk};
+            \end{scope}
+        \end{tikzpicture}
+        \end{center}
+        \vspace{-4mm}
+    \begin{itemize}
+        \item Linear attention may favor increasing $|\mathbf{S}\mathbf{k}|$ over angle alignment, leading to numerical instabilities.
+        \item Mamba2 uses {\color{red}decay} ($\mathbf{S}_t = {\color{red}\alpha_t} \mathbf{S}_{t-1} + \mathbf{v}_t \mathbf{k}_t^\top$) to control $|\mathbf{S}\mathbf{k}|$, stabilizing the training process.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{DeltaNet: Test-Time Objective}
+    \begin{center}
+        \begin{tikzpicture}[scale=0.9]
+            \begin{scope}[xshift=1cm]  
+                \node at (0,3.5) {Directly minimize Euclidean distance};
+                
+                \coordinate (O) at (0,0);
+                \draw[dashed] (-2,0) -- (3,0);     
+                \draw[dashed] (0,-1) -- (0,3);     
+                
+                % Original vectors - 调整位置使更分散
+                \draw[->,purple,thick] (O) -- (2,2) coordinate (Mk1) node[above] {$\mathbf{S}_{t-1}\mathbf{k}_t$};
+                \draw[->,blue,thick] (O) -- (1.5,0.8) coordinate (v) node[right] {$\mathbf{v}_t$};
+                
+                % Draw the distance line - 需要更新坐标以匹配新的向量位置
+                \draw[thick] (2,2) -- (1.5,0.8);
+                
+                % Dashed vector halfway between Mk1 and v - 调整位置
+                \draw[->, purple,dashed] (O) -- (1.75,1.4) node[right] {$\mathbf{S}_{t}\mathbf{k}_t$};
+            \end{scope}
+        \end{tikzpicture}
+     \end{center}
+\vspace{-5mm}      
+% DeltaNet (\cite{Schlag2021LinearTA, yang2024parallelizing}) optimizes a regression loss via SGD:
+    \begin{align*}
+        \textbf{Objective: } & \mathcal{L}_t(\mathbf{S}) = \frac{1}{2}\|\mathbf{S} \mathbf{k}_t - \mathbf{v}_t\|^2 \\[1ex]
+        \textbf{SGD update: } & \mathbf{S}_t = \mathbf{S}_{t-1} - \beta_t \nabla \mathcal{L}_t(\mathbf{S}_{t-1}) = \mathbf{S}_{t-1} - \beta_t (\mathbf{S}_{t-1} \mathbf{k}_t - \mathbf{v}_t)\mathbf{k}_t^\top 
+    \end{align*}
+    \vspace{-5mm}
+
+        \begin{itemize}
+            \item {\color{red} Better numerical stability}: the norm of $\mathbf{S}_t$ is controlled.
+            \item {\color{red} Better in-context associative recall}: directly optimizes key-value association prediction (\cite{Liu2024LonghornSS})
+        \end{itemize}
+
+
+
+
+    % Online regression loss is better for predicting $\mathbf{v}_t$ from $\mathbf{k}_t$ and $\mathbf{S}_{t-1}$.
+    %     $$\mathcal{L}_t(\mathbf{S}) = \frac{1}{2}\|\mathbf{S} \mathbf{k}_t - \mathbf{v}_t\|^2$$
+    %     \vspace{2mm}
+    %     Performing a single step of SGD:
+    % $$\begin{aligned}
+    % \mathbf{S}_t &= \mathbf{S}_{t-1} - \beta_t \nabla \mathcal{L}_t(\mathbf{S}_{t-1}) \\
+    % &= \mathbf{S}_{t-1} - \beta_t \left(\mathbf{S}_{t-1} \mathbf{k}_t - \mathbf{v}_t\right) \mathbf{k}_t^\top
+    % \end{aligned}$$
+    % \begin{itemize}
+    %     \item When $\beta_t \in (0, 1)$, the DeltaNet update rule (\cite{Schlag2021LinearTA, yang2024parallelizing}) is recovered.  
+    % \end{itemize}
+\end{frame}
+
+% \begin{frame}{Comparison between DeltaNet and Linear Attention}
+%     \begin{tikzpicture}
+%         % Title
+%         % Left diagram
+%         \begin{scope}[xshift=-4cm]
+%             \node at (0,3.5) {Maximize ``alignment''};
+%             \node at (0,3) {= Minimize angle + enlarge $|Mk|$};
+            
+%             % Define coordinates and draw vectors with names
+%             \coordinate (O) at (0,0);
+%             \draw[->,purple,thick] (O) -- (1.75,1.75) coordinate (Mk) node[above] {$\mathbf{S}_{t-1}\mathbf{k}_t$};
+%             \draw[->,green,thick] (O) -- (1.5,0.8) coordinate (v) node[right] {$\mathbf{v}_t$};
+            
+%             % Add dashed extension to show enlarging norm
+%             \draw[->, purple,dashed] (O) -- (3,2.1) node[above] {$\mathbf{S}_{t}\mathbf{k}_t$};
+%             % \node[right] at (2.0,2.0) {$\uparrow$};
+    
+%             % Coordinate axes
+%             \draw[dashed] (-1,0) -- (2,0);
+%             \draw[dashed] (0,-1) -- (0,2);
+            
+%             % Draw angle arc
+%             \pic [draw, angle radius=5mm] {angle = v--O--Mk};
+            
+%             % Loss function
+%             \node at (0,-1.5) {$\text{loss}_M(k,v) = -\langle \mathbf{S}_{t-1}\mathbf{k}_t, \mathbf{v}_t \rangle$};
+%         \end{scope}
+        
+%         % Right diagram
+%         \begin{scope}[xshift=2cm]
+%             \node at (0,3.5) {Minimize (Euclidean) distance};
+            
+%             \coordinate (O) at (0,0);
+%             \draw[dashed] (-1,0) -- (2,0);
+%             \draw[dashed] (0,-1) -- (0,2);
+            
+%             % Original vectors
+%             \draw[->,purple,thick] (O) -- (1.75,1.75) coordinate (Mk1) node[above] {$\mathbf{S}_{t-1}\mathbf{k}_t$};
+%             \draw[->,green,thick] (O) -- (1.5,0.8) coordinate (v) node[right] {$\mathbf{v}_t$};
+            
+%             % Draw the distance line
+%             \draw (1.75,1.75) -- (1.5,0.8);
+            
+%             % Dashed vector halfway between Mk1 and v
+%             \draw[->, purple,dashed] (O) -- (1.6,1.3) node[right] {$\mathbf{S}_{t}\mathbf{k}_t$};
+            
+%             \node at (0,-1.5) {$\mathcal{L}_{S}(k,v) = \frac{1}{2}\|\mathbf{S}_{t-1}\mathbf{k}_t - \mathbf{v}_t\|^2$};
+%         \end{scope}
+%     \end{tikzpicture}
+%     \begin{itemize}
+%         \item Linear attention's objective encourages expanding the norm of $\mathbf{S}_t$, leading to numerical instabilities. 
+%         \begin{itemize}
+%             \item Weight decay (e.g., in Mamba2) could mitigate this issue.
+%         \end{itemize}
+%         \item DeltaNet's objective encourages minimizing the distance between $\mathbf{S}_t \mathbf{k}_t$ and $\mathbf{v}_t$, which is more stable.
+%     \end{itemize}
+% \end{frame}
+% \begin{frame}{DeltaNet performs better on in-context associative recall}
+%     \begin{block}{Associative recall}
+%         \begin{quote}
+%             \small ``In psychology, associative memory is {\color{red} \textbf{the ability to learn and remember relationships between unrelated items}}, such as remembering someone's name when seeing their face. This allows us to form connections between distinct pieces of information.''
+%         \end{quote}
+%     \end{block}
+    
+%     DeltaNet learns associations through online linear regression: minimizing $\|\mathbf{S}\mathbf{k}_i - \mathbf{v}_i\|^2$ directly optimizes key-value prediction (\cite{Liu2024LonghornSS}).
+% \end{frame}
+
+\begin{frame}{In-context associative recall}
+    \begin{block}{\scriptsize Multi-Query Associative Recall (MQAR, \cite{zoology})}
+        \scriptsize
+        A synthetic benchmark for testing in-context associative recall.
+        \vspace{1mm}
+        \textbf{Example:}
+        \begin{itemize}
+            \item Given key-value pairs: ``A 4 B 3 C 6 F 1 E 2''
+            \item Query: ``A ? C ? F ? E ? B ?''  
+            \item Expected output: ``4, 6, 1, 2, 3''
+        \end{itemize}
+    \end{block}
+    \vspace{-1mm}
+    \input{figure/mqar.tex}
+\end{frame}
+% \begin{frame}{DeltaNet performs better on in-context associative recall: MAD results}
+%     MAD (\cite{poli_mechanistic_2024}) serves as a more comprehensive benchmark suite than MQAR for evaluating in-context associative recall and learning.
+%     \begin{table}
+% \resizebox{\linewidth}{!}{
+% \begin{tabular}{l|*{6}{c}|c}
+% \toprule
+% \textbf{Model} & \textbf{Compress} & \cellcolor{red!15}\textbf{Fuzzy} & \cellcolor{red!15}\textbf{In-Context} & \textbf{Memorize} & \cellcolor{red!15}\textbf{Noisy} & \cellcolor{red!15}\textbf{Selective} & \textbf{Average} \\
+% & & \cellcolor{red!15}\textbf{Recall} & \cellcolor{red!15}\textbf{Recall} & & \cellcolor{red!15}\textbf{Recall} & \cellcolor{red!15}\textbf{Copy} & \\
+% \midrule
+% Transformer & 51.6 & \cellcolor{red!15}29.8 & \cellcolor{red!15}94.1 & 85.2 & \cellcolor{red!15}86.8 & \cellcolor{red!15}99.6 & 74.5 \\
+% Hyena & 45.2 & \cellcolor{red!15}7.9 & \cellcolor{red!15}81.7 & 89.5 & \cellcolor{red!15}78.8 & \cellcolor{red!15}93.1 & 66.0 \\
+% Multihead Hyena \hspace{4mm} & 44.8 & \cellcolor{red!15}14.4 & \cellcolor{red!15}99.0 & 89.4 & \cellcolor{red!15}98.6 & \cellcolor{red!15}93.0 & 73.2 \\
+% Mamba & 52.7 & \cellcolor{red!15}6.7 & \cellcolor{red!15}90.4 & 89.5 & \cellcolor{red!15}90.1 & \cellcolor{red!15}86.3 & 69.3 \\
+% GLA & 38.8 & \cellcolor{red!15}6.9 & \cellcolor{red!15}80.8 & 63.3 & \cellcolor{red!15}81.6 & \cellcolor{red!15}88.6 & 60.0 \\
+% DeltaNet & 42.2 & \cellcolor{red!15}\textbf{35.7} & \cellcolor{red!15}\textbf{100} & 52.8 & \cellcolor{red!15}\textbf{100} & \cellcolor{red!15}\textbf{100} & 71.8 \\
+% \bottomrule
+% \end{tabular}
+% }
+% \caption{MAD benchmark results. DeltaNet achieves the best performance in in-context associative recall and copy tasks, however, it somehow underperforms in memorization and compression tasks.}
+% \label{tab:mad_results}
+% \end{table}
+% \end{frame}
+
+
+\begin{frame}{Transformers and SSMs in TC$^0$}
+    \begin{figure}
+        \centering
+        \includegraphics[width=.45\linewidth]{figure/tc0.png}
+    \end{figure}
+    \vspace{-2mm}
+\begin{itemize}
+    \item Transformers are in TC$^0$.
+    \item Linear RNNs with {\color{red}diagonal transition matrices} (e.g., $\mathbf{S}_t = \mathbf{S}_{t-1} \operatorname{diag}(\boldsymbol{\alpha}_t) + \mathbf{v}_t \mathbf{k}_t^\top$ in GLA) fall under TC$^0$.
+    \item {\color{red} Nonlinear RNN} or linear RNN with {\color{red} data-dependent nondiagonal transition matrices} could achieve expressiveness beyond TC$^0$ (\cite{Merrill2024TheIO}).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{DeltaNet's expressiveness}
+    \begin{align*}
+    \mathbf{S}_t &= \mathbf{S}_{t-1} - \beta_t \left(\mathbf{S}_{t-1} \mathbf{k}_t - \mathbf{v}_t\right) \mathbf{k}_t^\top \\
+    &= \mathbf{S}_{t-1} {\color{blue}\left(\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top\right)} + \beta_t \mathbf{v}_t \mathbf{k}_t^\top
+    \end{align*}
+
+    DeltaNet uses {\color{blue} Generalized Householder} (GH) transition matrices, which are both {\color{red}data-dependent} and {\color{red}nondiagonal}, making it possible to achieve expressiveness beyond $TC^0$.
+    % {\color{red}Both conditions} are necessary to achieve expressiveness beyond $TC^0$ (\cite{Merrill2024TheIO}).
+\end{frame}
+
+
+
+ \begin{frame}{DeltaNet's expressiveness}
+    % First show the state update equation
+    \begin{align*}
+        \mathbf{S}_t &= \mathbf{S}_{t-1} \underbrace{(\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top)}_{\text{GH transition}} + \beta_t \mathbf{v}_t \mathbf{k}_t^\top 
+        = \sum_{i=1}^{t} \left(\beta_i \mathbf{v}_i \mathbf{k}_i^t {\color{blue}\underbrace{\prod_{j=i+1}^{t} (\mathbf{I} - \beta_j \mathbf{k}_j \mathbf{k}_j^\top)}_{\text{cumulative GH products}}}\right)
+    \end{align*}
+
+    \vspace{-8mm}
+    
+    \textbf{Key Properties:}
+    \begin{itemize}
+        
+        \item \textbf{Expressiveness}: When allowing negative eigenvalues in GH matrices (\cite{Grazzi2024UnlockingSI}), {\color{blue}the cumulative products of GH matrices} can represent \textit{any} matrix with Euclidean norm < 1.
+        
+        \item \textbf{Complexity Class}: 
+            {\color{blue}Cumulative products of general matrices} cannot be computed in TC$^0$ (\cite{Mereghetti2000ThresholdCF}).
+
+        \item \textbf{Conclusion}: {\color{red}DeltaNet with negative eigenvalues has expressiveness beyond TC$^0$}, strictly exceeding SSMs and Transformers.
+    \end{itemize}
+\end{frame}
+    
+
+\begin{frame}{State tracking performance}
+    \begin{figure}
+        \centering
+        \includegraphics[width=.75\linewidth]{figure/state_tracking.png}
+        \caption{State tracking performance comparison (source: \cite{Grazzi2024UnlockingSI}). $[0,1]$ and $[-1,1]$ denotes the ranges of eigenvalues for each model's transition matrix.}
+    \end{figure}
+    \vspace{-5mm}
+   \begin{itemize}
+    \item {\color{red}Allowing negative eigenvalues} could boost state tracking performance for both Mamba and DeltaNet.
+    \item DeltaNet achieves superior performance due to its {\color{red}richer expressiveness}.
+   \end{itemize}
+\end{frame}
+
+\begin{frame}{DeltaNet: Chunkwise Parallel Training}
+    \begin{align*}
+        \mathbf{S}_t &= \mathbf{S}_{t-1} \left(\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top\right) + \beta_t \mathbf{v}_t \mathbf{k}_t^\top \\
+        &= \mathbf{S}_{t-1} + {\color{red}\underbrace{\beta_t(\mathbf{v}_t - \mathbf{S}_{t-1} \mathbf{k}_t)}_{\text{defined as } \mathbf{u}_t}} \mathbf{k}_t^\top \\
+        &= \mathbf{S}_{t-1} + {\color{red}\mathbf{u}_t} \mathbf{k}_t^\top \\
+        &= \sum_{i=1}^{t} {\color{red}\mathbf{u}_i} \mathbf{k}_i^\top
+    \end{align*}    Once ``pseudo-values'' ${\color{red}\mathbf{u}_t}$ are computed, DeltaNet can be trained using the same kernel as linear attention.
+\end{frame}
+
+
+\begin{frame}{DeltaNet: Chunkwise Parallel Training}
+    \begin{align*}
+        \mathbf{S}_t &= \mathbf{S}_{t-1} \left(\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top\right) + \beta_t \mathbf{v}_t \mathbf{k}_t^\top \\
+        &= \sum_{i=1}^{t} \left(\beta_i \mathbf{v}_i \mathbf{k}_i^\top {\color{blue}\underbrace{\prod_{j=i+1}^{t} (\mathbf{I} - \beta_j \mathbf{k}_j \mathbf{k}_j^\top)}_{\mathbf{P}_j^t}}\right) 
+    \end{align*}
+    Using the WY representation (\cite{bischof_wy_1985}):
+    \[
+    \color{blue}\mathbf{P}_{1}^t = \mathbf{I} - \sum_{i=1}^{t}\mathbf{w}_{i}\mathbf{k}_{i}^{\top}.
+    \]
+    \color{black}
+    {\color{red}\textbf{Key Insight}}: The cumulative product $\prod$ becomes a cumulative sum $\sum$, enabling efficient matrix-multiply-based training.
+    \end{frame}
+
+\begin{frame}{}
+\vspace{-2mm}
+    \input{figure/state_passing_deltanet.tex}
+    \vspace{-10mm}
+    \begin{align*}
+        \boldsymbol{S}_{[t+1]} &= \boldsymbol{S}_{[t]}
+        {\color{blue!50}\colorbox{yellowgreen!30}{$\mathbf{({\boldsymbol{I}}-\boldsymbol{W}_{[t]}^\top \boldsymbol{K}_{[t]})}$}} + 
+        {\color{blue!50}\colorbox{red!30}{$\mathbf{\boldsymbol{U}_{[t]}^\top \boldsymbol{K}_{[t]}}$}}
+    \end{align*}
+ Using hardware-friendly UT transform (\cite{Joffrain2006AccumulatingHT}):
+    \begin{align*}
+        \mathbf{T}_{[t]} &= \left(\mathbf{I} + \operatorname{tril}(\operatorname{diag}(\beta_{[t]})\mathbf{K}_{[t]} \mathbf{K}_{[t]}^\intercal,-1)\right)^{-1}\operatorname{diag}\left(\beta_{[t]}\right) &&\in \mathbb{R}^{C \times C} \\  \mathbf{W}_{[t]} &= \mathbf{T}_{[t]} \mathbf{K}_{[t]}, \quad 
+        \mathbf{U}_{[t]}=\mathbf{T}_{[t]}\mathbf{V}_{[t]} && \in \mathbb{R}^{C \times d}
+    \end{align*}
+
+    \begin{tcolorbox}[colback=yellowgreen!30,colframe=black,boxrule=0.5pt]
+        \footnotesize See \url{https://sustcsonglin.github.io/blog/2024/deltanet-2/} for details.
+    \end{tcolorbox}
+\end{frame}
+
+\begin{frame}{}
+    \input{figure/parallel_output_linearattn.tex}
+      \begin{align*}
+        {\color{orange}\mathbf{O}_{[t]}} &= \colorbox{yellowgreen!30}{${\color{blue!50}\mathbf{Q}_{[t]}}\mathbf{S}_{[t]}^\top$} + \colorbox{red!30}{$\left({\color{blue!50}\mathbf{Q}_{[t]}\mathbf{K}_{[t]}^\top \odot \mathbf{M}}\right)\left({\color{blue!50}\mathbf{U}_{[t]}}-{\color{blue!50}\mathbf{W_{[t]}}}\mathbf{S_{[t]}^\top} \right)$}
+      \end{align*}
+      
+      Compared to vanilla linear attention, the ``pseudo-values'' need to be adjusted by the historical context: $\mathbf{W}_{[t]}\mathbf{S}_{[t]}^\top$.
+\end{frame}
+
+
+
+\begin{frame}{Gated DeltaNet}
+    Enhancing DeltaNet with a {\color{red}{Mamba2-like gating mechanism}} could boost performance on {\color{red}real-world tasks}.
+        \begin{align*}
+            \mathbf{S}_t = \mathbf{S}_{t-1} \left({\color{red}\alpha_t}(\mathbf{I} - \beta_t \mathbf{k}_t \mathbf{k}_t^\top)\right) + \beta_t \mathbf{v}_t \mathbf{k}_t^\top
+        \end{align*}
+    \begin{table}[h!]
+        \centering
+        \resizebox{0.9\linewidth}{!}{%
+            \begin{tabular}{lcccc}
+                \toprule
+                \textbf{Model} & \textbf{ppl} $\downarrow$ & \textbf{LM-eval} $\uparrow$ & \textbf{Recall} $\uparrow$ & \textbf{Long} $\uparrow$ \\
+                \midrule
+                Mamba1         & 17.92 & 53.12 & 21.0 & 14.6 \\
+                Mamba2         & 16.56 & 54.89 & 29.8 & 13.5 \\
+                DeltaNet       & 17.72 & 52.14 & 26.2 & 13.6 \\
+                Gated DeltaNet & \textbf{16.42} & \textbf{55.32} & \textbf{30.6} & \textbf{16.6} \\
+                \bottomrule
+            \end{tabular}
+        }
+        \caption{Performance comparison of different 1.3B models trained on 100B tokens. Source: \cite{yang2024gateddeltanetworksimproving}.}
+        \label{tab:model_comparison}
+    \end{table}
+\end{frame}
+\begin{frame}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.65\linewidth]{figure/gdn-speed.png}
+        \caption{End-to-end training throughput comparison for different 1.3B models on a single H100. Source: \cite{yang2024gateddeltanetworksimproving}.}
+    \end{figure}
+    Combining DeltaNet and Mamba2's chunkwise algorithms for hardware-efficient training:
+    \begin{itemize}
+    \item Pure Gated DeltaNet is slightly slower than Mamba2.  
+    \item Hybridizing sliding window attention with Gated DeltaNet (i.e., Gated DeltaNet-H1) improves throughput.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+    DeltaNet's chunkwise algorithm can be extended to {\color{red}diagonal}-plus-{\color{blue}low-rank} transition matrices:
+    \begin{align*}
+        \mathbf{S}_t = \mathbf{S}_{t-1} ({\color{red}\mathbf{D}_t} + {\color{blue}\boldsymbol{\alpha}_t \boldsymbol{\beta}_t^\top}) + \mathbf{v}_t \mathbf{k}_t^\top, \quad {\color{red}\mathbf{D}_t \in \mathbb{R}^{d \times d}}, \quad {\color{blue}\boldsymbol{\alpha}_t, \boldsymbol{\beta}_t \in \mathbb{R}^{d}}
+    \end{align*}
+    \vspace{-5mm}
+    \begin{itemize}
+        \item \textbf{RWKV-7} employs this linear recurrence, showing effectiveness. 
+        \item A fast implementation is available in the flash-linear-attention library (\url{https://github.com/fla-org/flash-linear-attention/blob/main/fla/ops/rwkv7/chunk.py}).
+    \end{itemize}
+    
+    \begin{center}
+        \includegraphics[width=0.75\linewidth]{figure/rwkv7.png}
+    \end{center}
+\end{frame}
+
+\begin{frame}{DeltaProduct}
+    Generalizing the DeltaNet by performing {\color{red}multiple gradient descent steps} (i.e., $n_h$) {\color{blue}per token}:
+    \[
+    \begin{aligned}
+        \mathbf{S}_{{\color{blue}t},{\color{red}j}} &= \mathbf{S}_{{\color{blue}t},{\color{red}j-1}} - \beta_{{\color{blue}t},{\color{red}j}}\nabla\mathcal{L}_{{\color{blue}t},{\color{red}j}}(\mathbf{S}_{{\color{blue}t},{\color{red}j-1}}) \\
+        &= \left(\mathbf{I} - \beta_{{\color{blue}t},{\color{red}j}}\mathbf{k}_{{\color{blue}t},{\color{red}j}}\mathbf{k}_{{\color{blue}t},{\color{red}j}}^\top\right)\mathbf{S}_{{\color{blue}t},{\color{red}j-1}} + \beta_{{\color{blue}t},{\color{red}j}}\mathbf{v}_{{\color{blue}t},{\color{red}j}}\mathbf{k}_{{\color{blue}t},{\color{red}j}}^\top
+    \end{aligned}
+    \]
+    where $\mathbf{S}_{{\color{blue}t},{\color{red}0}} = \mathbf{S}_{{\color{blue}t-1}}$ and $\mathbf{S}_{{\color{blue}t},{\color{red}n_h}} = \mathbf{S}_{{\color{blue}t}}$. This results in a \textbf{high-rank} recurrent updates
+    \[
+    \begin{aligned}
+        \mathbf{S}_{\color{blue}t} &= \mathbf{S}_{\color{blue}t-1} \mathbf{A}_{\color{blue}t} + \mathbf{B}_{\color{blue}t} \\
+        \mathbf{A}_{\color{blue}t} &= {\color{red}\prod_{j=1}^{n_h}} \left(\mathbf{I} - \beta_{{\color{blue}t}, {\color{red} j}} \mathbf{k}_{{\color{blue}t}, {\color{red} j}} \mathbf{k}_{{\color{blue}t}, {\color{red} j}}^\top\right) \\
+        \mathbf{B}_{\color{blue}t} &= {\color{red}\sum_{j=1}^{n_h}} \beta_{{\color{blue}t}, {\color{red} j}} \mathbf{v}_{{\color{blue}t}, {\color{red} j}} \mathbf{k}_{{\color{blue}t}, {\color{red} j}}^\top {\color{red}\prod_{l=1}^{j-1}} \left(\mathbf{I} - \beta_{{\color{blue}t}, {\color{red} l}} \mathbf{k}_{{\color{blue}t}, {\color{red} l}} \mathbf{k}_{{\color{blue}t}, {\color{red} l}}^\top\right)
+    \end{aligned}
+    \]
+    where both the transition matrix $\mathbf{A}_{\color{blue}t}$ and the input $\mathbf{B}_{\color{blue}t}$ are rank-$n_h$ matrices.
+\end{frame}
+
+\begin{frame}{DeltaProduct}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.9\linewidth]{figure/deltaproduct.jpg}
+        \vspace{-4mm}
+        \caption{This figure is copied from \cite{siems2025deltaproductincreasingexpressivitydeltanet}.  (\textit{Left}) DeltaProduct$_{n_h}$ learns higher-order permutation groups like $S_4$ in one layer, while DeltaNet ($n_h = 1$) is limited to $S_2$. (\textit{Right}) Length extrapolation of DeltaProduct improves significantly with higher $n_h$.}
+    \end{figure}
+    
+\end{frame}
+
+\begin{frame}{Summary}
+    \begin{itemize}
+        \item Linear attention and DeltaNet are {\color{red}fast weight programmers} with different {\color{red}test-time SGD} weight updates.
+        \item DeltaNet has {\color{red}strictly more expressive power} than Mamba/GLA while {\color{red}maintaining efficient parallelization}
+        \item DeltaNet's chunkwise algorithm could be generalized to {\color{red} diagonal-plus-low-rank transition matrices}
+        \item {\color{red}Gating} and {\color{red}high-rank updates} further enhance DeltaNet's performance
+    \end{itemize}
+\end{frame}

@@ -1,0 +1,96 @@
+
+\begin{tikzpicture}[
+    box/.style={
+        rectangle,
+        minimum size=0.5cm,
+        draw=black!20
+    }
+]
+    \foreach \x in {0,5,10,15} {
+        \draw[dashed] (\x,-2) -- (\x,2);
+    }
+            \begin{scope}[shift={(-1.5,0)}]
+            \node[draw=black, minimum size=1cm] (grid-0-3) at (0.5,0.5) {};
+            \foreach \x in {0,0.33,0.66} {
+                \foreach \y in {0,0.33,0.66} {
+                    \draw[black] (\x+0.17,\y+0.17) circle (0.12);
+                }
+            }
+        \end{scope}
+
+
+    \foreach \section [count=\i] in {0.5,5.5} {
+
+        % \foreach \offset [count=\j] in {0,1.5} {
+
+     \begin{scope}[shift={(\section+1.5,0.1)}]
+
+        \node[box, fill=red!100, minimum size=0.33cm] at (0.17,0.83) {};
+        \node[box, minimum size=0.33cm] at (0.5,0.83) {};
+        \node[box, minimum size=0.33cm] at (0.83,0.83) {};
+        
+        \node[box, fill=red!15, minimum size=0.33cm] at (0.17,0.5) {};
+        \node[box, fill=red!75, minimum size=0.33cm] at (0.5,0.5) {};
+        \node[box, minimum size=0.33cm] at (0.83,0.5) {};
+        
+
+        \node[box, fill=red!25, minimum size=0.33cm] at (0.17,0.17) {};
+        \node[box, fill=red!45, minimum size=0.33cm] (attn-\i)at (0.5,0.17) {};
+        \node[box, fill=red!65, minimum size=0.33cm] at (0.83,0.17) {};
+    \end{scope}
+
+        \begin{scope}[shift={(\section+3,0)}]
+            \node[draw=black, minimum size=1cm] (grid-\i-3) at (0.5,0.5) {};
+            \foreach \x in {0,0.33,0.66} {
+                \foreach \y in {0,0.33,0.66} {
+                    \draw[black] (\x+0.17,\y+0.17) circle (0.12);
+                }
+            }
+        \end{scope}
+    }
+    
+
+    \foreach \section [count=\i] in {0.5,5.5} {
+        \begin{scope}[shift={(\section,-1.5)}]
+
+            \foreach \offset [count=\j] in {0,1.5,3} {
+                \node[draw=black, fill=blue!20, minimum width=1cm, minimum height=0.4cm] (rect-\i-\j) at (\offset+0.5,0.2) {};
+
+                \foreach \x in {0.2, 0.5, 0.8} {
+                    \draw[black] (\offset+\x,0.2) circle (0.1);
+                }
+                \node[draw=black, minimum width=1cm, minimum height=0.4cm,fill=orange!30] (upper-rect-\i-\j) at (\offset+0.5,0.2+3.5) {};
+                \foreach \x in {0.2, 0.5, 0.8} {
+                    \draw[black] (\offset+\x,0.2+3.5) circle (0.1);
+                }
+                
+            
+    \pgfmathsetmacro{\prevsection}{\i-1}
+\draw[->, yellowgreen, thick] 
+    (grid-\the\numexpr\i-1\relax-3.east) 
+    to[bend left=20] 
+    (upper-rect-\i-\j.west);
+
+\draw[->, yellowgreen, thick] 
+    (rect-\i-\j.north) 
+    to[bend left=30] 
+    (upper-rect-\i-\j.west);
+
+\draw[->,red!50,very thick] (rect-\i-\j.north) to[out=90,in=-90,looseness=1.2] (attn-\i.south);
+
+\draw[->,red!50,very thick] ([yshift=0.6cm]attn-\i.north) to[out=90,in=-90,looseness=1.2] (upper-rect-\i-\j.south);
+
+}
+
+\ifnum\i>1
+\fi
+
+        \end{scope}
+    }
+    
+\node[above=0.25cm,xshift=-3cm,align=center] at (upper-rect-2-2.north) {
+  \textcolor{black}{\large{\textbf{\color{red}Parallel} Output Computation:}} \\
+%   ${\color{orange}\mathbf{O}_{[i]}}=\colorbox{yellowgreen!30}{${\color{blue!50}\mathbf{Q}_{[i]}}\mathbf{S}_{[i]}^\top$}+\colorbox{red!30}{\color{blue!50}$\left({\mathbf{Q}_{[i]}\mathbf{K}_{[i]}^\top \odot \mathbf{M}}\right)\mathbf{V}_{[i]}$}$
+};
+
+\end{tikzpicture}

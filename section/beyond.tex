@@ -1,0 +1,154 @@
+
+
+\begin{frame}{}
+    \centering
+    \LARGE
+     Beyond linear regression objective
+\end{frame}
+
+
+\begin{frame}{Beyond linear regression objective}
+      DeltaNet optimizes the online linear regression loss:
+    \begin{align*}
+      \mathcal{L}_t(\mathbf{S}) = \frac{1}{2}\|\mathbf{S} \mathbf{k}_t - \mathbf{v}_t\|^2
+    \end{align*}
+    \begin{itemize}
+        \item This optimization objective assumes linear relationships in historical data dependencies
+        \item However, generative AI tasks involve complex, nonlinear dependencies
+        \item A linear regression loss may be insufficient to capture these rich patterns.
+    \end{itemize}
+  \end{frame}
+  \begin{frame}{Going beyond online linear regression objective}
+    TTT (\cite{sun2024learning}) extends this to a nonlinear regression loss:
+    \begin{align*}
+      \mathcal{L}_t(\mathbf{S}) = \frac{1}{2}\|f_{\mathbf{S}}(\mathbf{k}_t) - \mathbf{v}_t\|^2
+    \end{align*}
+    where $f_{\mathbf{S}}$ is a nonlinear transformation parameterized by $\mathbf{S}$.
+
+    Examples:
+    \begin{itemize}
+        \item TTT-linear: 
+            \begin{align*}
+                f_{\mathbf{S}}(x) = \operatorname{LN}(\mathbf{S}x) + x,
+            \end{align*}
+        \item TTT-MLP:
+            \begin{align*}
+                f_{\mathbf{S}}(x) = \operatorname{LN}(\operatorname{MLP}_{\mathbf{S}}(x)) + x
+            \end{align*}
+    \end{itemize}
+
+    where $\operatorname{LN}$ denotes layer normalization.
+
+    % \begin{itemize}
+    %     \item<1-1> \textbf{TTT-linear}: 
+    %         \begin{align*}
+    %             f_{\mathbf{S}}(x) = \operatorname{LN}(\mathbf{S}x) + x,
+    %         \end{align*}
+    %         where \(\operatorname{LN}\) denotes layer normalization.
+    %         \begin{itemize}
+    %             \item \textcolor{red}{\textbf{TTT-linear is a nonlinear RNN}} due to the presence of layer normalization.
+    %         \end{itemize}
+    
+    %     \item<2-2> \textbf{TTT-MLP}:
+    %         \begin{align*}
+    %             f_{\mathbf{S}}(x) = \operatorname{LN}(\mathbf{S}_2^\top \sigma(\mathbf{S}_1x)) + x,
+    %         \end{align*}
+    %         where:
+    %         \begin{itemize}
+    %             \item \( \mathbf{S} = [\mathbf{S}_1 ; \mathbf{S}_2] \) and \( \mathbf{S}_1, \mathbf{S}_2 \in \mathbb{R}^{d \times 4d} \) are analogous to standard MLP layers with an intermediate hidden dimension expansion factor of 4.
+    %             \item \( \sigma \) is a nonlinear activation function, and in TTT-MLP, \( \sigma \) is the GeLU activation.
+    %         \end{itemize}
+    % \end{itemize}
+    
+  \end{frame}
+  \begin{frame}{Beyond Linear Regression Objective}
+
+    The nonlinear loss induces a nonlinear recurrence, posing challenges for parallelization. \\
+    \vspace{0.5em}
+    \textcolor{red}{\textbf{Solution}}: Mini-batch Gradient Descent
+    \begin{itemize}
+        \item Minibatch size aligns with chunk size.
+        \item Each token within a chunk is treated as an independent training example for parallel processing.
+        \item Sequential dependencies are preserved via a lightweight linear recurrence within chunks.
+    \end{itemize}
+    \vspace{0.5em}
+     This approach essentially combines {\color{red}{intra-chunk linear recurrence}} with {\color{red}{inter-chunk nonlinear recurrence}}.
+\end{frame}
+
+  \begin{frame}{Beyond linear regression objective}
+    TTT (\cite{sun2024learning}) extends this to a nonlinear regression loss:
+    \begin{align*}
+      \mathcal{L}_t(\mathbf{S}) = \frac{1}{2}\|f_{\mathbf{S}}(\mathbf{k}_t) - \mathbf{v}_t\|^2
+    \end{align*}
+    where $f_{\mathbf{S}}$ is a nonlinear transformation parameterized by $\mathbf{S}$.
+
+    \begin{itemize}
+        \item Titans (\cite{behrouz2024titanslearningmemorizetest}) further enhances TTT by integrating {\color{red}{momentum}} and {\color{red}{weight decay}} into the mini-batch SGD update.
+    \end{itemize}
+  \end{frame}
+
+
+
+
+  \begin{frame}{Summary}
+    \begin{itemize}
+        \item \textbf{Modern RNNs through the lens of online learning}:
+            \begin{itemize}
+                \item (Decaying/Gated) Linear attention: Negative inner-product loss.
+                \item (Gated) DeltaNet: Linear regression loss.
+                \item TTT \& Titans: Nonlinear regression losses.
+            \end{itemize}
+        
+        \item \textbf{Gradient-based optimization techniques prove valuable}:
+            \begin{itemize}
+                \item Weight decay enables effective forgetting (e.g., Mamba2, Gated DeltaNet).
+                \item Momentum improves performance (e.g., Titans).
+            \end{itemize}
+        
+        \item \textbf{Efficient hardware utilization via}:
+            \begin{itemize}
+                \item Chunkwise training for linear attention.
+                \item Hybrid linear/nonlinear approaches across chunks (e.g., TTT \& Titans).
+            \end{itemize}
+        
+        \item \textbf{Promising future}: Bridging optimization and RNN architectures.
+    \end{itemize}
+\end{frame}
+
+
+    
+% \end{frame}
+
+% \begin{frame}{Case study: MQAR}
+
+% \begin{frame}{}
+
+    
+% \end{frame}
+
+% \begin{frame}{Online regression loss}
+%     Hopefully this can be more 
+% \end{frame}
+
+% \begin{frame}{DeltaNet}
+    
+
+% \end{frame}
+
+% \begin{frame}{Gated DeltaNet}
+
+% \end{frame}
+
+% \begin{frame}{RWKV-7}
+
+% \end{frame}
+
+% \begin{frame}{TTT:}
+
+% \end{frame}
+
+% \begin{frame}{Titans:}
+
+% \end{frame}
+
+

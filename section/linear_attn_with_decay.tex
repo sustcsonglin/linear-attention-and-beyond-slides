@@ -1,0 +1,150 @@
+
+\begin{frame}{}
+    \centering
+    \LARGE
+     Linear attention with decay
+\end{frame} 
+
+
+
+\begin{frame}{Linear attention is not enough}
+    \begin{align*}
+        \mathbf{S}_t &= \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top &&\in \mathbb{R}^{d \times d}  \\
+        \mathbf{o}_t &= \mathbf{S}_t\mathbf{q}_t &&\in \mathbb{R}^d  
+    \end{align*}
+    \vspace{3mm}
+    Vanilla linear attention {\color{red}performs poorly in language modeling}.
+    \begin{itemize}
+        \item Only stores key-value pairs in memory.
+        \item Has no mechanism to forget old memories.
+        \item Leads to memory saturation and degradation in performance since the memory size is fixed.
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Linear attention with data-independent decay}
+    \begin{align*}
+        \mathbf{S}_t &= {\color{red}\gamma} \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top &&\in \mathbb{R}^{d \times d}  \\
+        \mathbf{o}_t &= \mathbf{S}_t\mathbf{q}_t &&\in \mathbb{R}^d  
+    \end{align*}
+    \begin{itemize}
+        \item ${\color{red}\gamma}$ is a constant exponential decay factor ${\color{red}0 < \gamma < 1}$.
+        \item This mechanism {\color{red}weighs recent tokens more than distant tokens}, and language modeling has a strong {\color{red}recency bias}.
+        \item Works well in practice: RetNet (\cite{sun2023retentive}), Lightning Attention (\cite{Qin2024VariousLC}).
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Linear attention with data-dependent decay}
+    \begin{align*}
+        \mathbf{S}_t &= {\color{red}\gamma_t} \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top &&\in \mathbb{R}^{d \times d}  \\
+        \mathbf{o}_t &= \mathbf{S}_t\mathbf{q}_t &&\in \mathbb{R}^d  
+    \end{align*}
+    \begin{itemize}
+        \item ${\color{red}{\gamma_t} \in (0, 1)}$ is a data-dependent decay term that is a function of $\mathbf{x}_t$.
+        \item Enables dynamic control of memory retention/forgetting based on input data.
+        \item Examples: Mamba2 (\cite{mamba2}), mLSTM (\cite{beck2024xlstm}), Gated Retention (\cite{sun2024you}).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{The parallel form for linear attention with decay}
+    \begin{align*}
+        \mathbf{S}_t &= {\color{red}\gamma_t} \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top &&\in \mathbb{R}^{d \times d}  \\
+        \mathbf{o}_t &= \mathbf{S}_t\mathbf{q}_t &&\in \mathbb{R}^d  
+    \end{align*}
+
+    Linear attention with decay has the following parallel form:
+    \begin{align*}
+        \mathbf{O} &= (\mathbf{Q}\mathbf{K}^\top \odot {\color{red} \mathbf{D}})\mathbf{V} \in \mathbb{R}^{L\times d} && \\
+        \color{red} \mathbf{D}_{i,j} &= \begin{cases}
+            \prod_{m=j+1}^i {\color{red}\gamma_m} & \text{if } i > j \\
+            1 & \text{if } i = j \\
+            0 & \text{otherwise}
+        \end{cases}
+    \end{align*}
+
+     The duality between recurrent and parallel forms is referred to as {\color{red} state space duality (SSD)} in Mamba2 (\cite{mamba2}).
+\end{frame}
+
+% \begin{frame}{The chunkwise parallel form for linear attention with decay}
+%     \begin{align*}
+%         \mathbf{S}_t &= {\color{red}\gamma_t} \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top &&\in \mathbb{R}^{d \times d} &&& \mathbf{o}_t &= \mathbf{S}_t\mathbf{q}_t &&\in \mathbb{R}^d 
+%     \end{align*}
+%     Linear attention with decay has the following chunkwise form:
+%     \begin{align*}
+%         \mathbf{S}_{[t]} &= {\color{red}\beta_{tC}} \mathbf{S}_{[t-1]}  +  (\mathbf{V}_{[t]} \odot {\color{red}\frac{\beta_{tC}}{\beta_{[t]}}[:,\, \text{None}]})^\top \mathbf{K}_{[t]} &&\in \mathbb{R}^{d \times d}  \\
+%         \mathbf{O}_{[t]} &= \underbrace{(\mathbf{Q}_{[t]} \mathbf{S}_{[t]}^\top) \odot {\color{red}\beta_{[t]}[:,\, \text{None}]}}_{\text{inter-chunk}} + \underbrace{(\mathbf{Q}_{[t]} \mathbf{K}_{[t]}^\top \odot {\color{red}\mathbf{D}_{[t]}}) \mathbf{V}_{[t]}}_{\text{intra-chunk}} &&\in \mathbb{R}^{C \times d} 
+%     \end{align*}
+%     The chunkwise form with decay is {\color{blue}\textbf{mathematically equivalent}} to Mamba2's {\color{red}\textbf{SSD block decomposition algorithm}}.
+% \end{frame}
+
+% \begin{frame}{The chunkwise parallel form for linear attention with decay}
+%     \begin{align*}
+%         \mathbf{S}_{[t]} &= {\color{red}\beta_{tC}} \mathbf{S}_{[t-1]}  +  (\mathbf{V}_{[t]} \odot {\color{red}\frac{\beta_{tC}}{\beta_{[t]}}[:,\, \text{None}]})^\top \mathbf{K}_{[t]} &&\in \mathbb{R}^{d \times d}  \\
+%         \mathbf{O}_{[t]} &= \underbrace{(\mathbf{Q}_{[t]} \mathbf{S}_{[t]}^\top) \odot {\color{red}\beta_{[t]}[:,\, \text{None}]}}_{\text{inter-chunk}} + \underbrace{(\mathbf{Q}_{[t]} \mathbf{K}_{[t]}^\top \odot {\color{red}\mathbf{D}_{[t]}}) \mathbf{V}_{[t]}}_{\text{intra-chunk}} &&\in \mathbb{R}^{C \times d} 
+%     \end{align*}
+%     \begin{itemize}
+%         \item<1-1> $\mathbf{S}_{[t]}:=\mathbf{S}_{tC} \in \mathbb{R}^{d \times d}$. $\square_{[t]}:=\square_{tC+1:(t+1)C} \in \mathbb{R}^{C \times d}$ for $\square \in \{\mathbf{Q}, \mathbf{K}, \mathbf{V}, \mathbf{O}\}$.
+%         \item<1-1> ${\color{red} \beta_{[t]} \in \mathbb{R}^{C}}$ represents the cumulative decay values within chunk $t$, where the $i$-th element is ${\color{red}(\beta_{[t]})_i= \beta_{tC+i}= \prod_{m=tC+1}^{tC+i}\gamma_m \in \mathbb{R}}$
+%         \item<1-1> ${\color{red}(\mathbf{D}_{[t]})_{i,j}} = \begin{cases}
+%             {\color{red}\prod_{m=tC+i+1}^{tC+j} \gamma_m} & \text{if } i < j \\
+%             1 & \text{if } i = j \\
+%             0 & \text{otherwise}  
+%         \end{cases} \qquad \in \mathbb{R}^{C \times C}$ 
+%     \end{itemize}
+
+%     We highlight the decay-related terms in red and if we remove these red terms, we recover the chunkwise form of vanilla linear attention.
+
+% \end{frame}
+
+
+
+% \begin{frame}{The chunkwise parallel form for linear attention with decay}
+%     \begin{align*}
+%         \mathbf{S}_t &= {\color{red}\gamma_t} \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top &&\in \mathbb{R}^{d \times d} &&& \mathbf{o}_t &= \mathbf{S}_t\mathbf{q}_t &&\in \mathbb{R}^d 
+%     \end{align*}
+%     Linear attention with decay has the following chunkwise form:
+%     \begin{align*}
+%         \mathbf{S}_{[t]} &= {\color{red}\beta_{Ct}} \mathbf{S}_{[t-1]}  +  (\mathbf{V}_{[t]} \odot {\color{red}\frac{\beta_{tC}}{\beta_{[t]}}[:,\, \text{None}]})^\top \mathbf{K}_{[t]} &&\in \mathbb{R}^{d \times d}  \\
+%         \mathbf{O}_{[t]} &= \underbrace{(\mathbf{Q}_{[t]} \mathbf{S}_{[t]}^\top) \odot {\color{red}\beta_{[t]}[:,\, \text{None}]}}_{\text{inter-chunk}} + \underbrace{(\mathbf{Q}_{[t]} \mathbf{K}_{[t]}^\top \odot {\color{red}\mathbf{D}_{[t]}}) \mathbf{V}_{[t]}}_{\text{intra-chunk}} &&\in \mathbb{R}^{C \times d} 
+%     \end{align*}
+%     \begin{itemize}
+%         \item Preserves matrix-multiply structure with minimal overhead when incorporating decay
+%         \item As fast as vanilla linear attention's chunkwise form
+%         \item Equivalent to Mamba2's block decomposition-based {\color{red} \textbf{SSD algorithm}} (\cite{mamba2}).
+%     \end{itemize}
+
+% \end{frame}
+
+
+
+
+
+
+\begin{frame}{Linear attention with more fine-grained decay}
+
+    \begin{align*}
+        \mathbf{S}_t &= {\color{red}\mathbf{G}_t} \odot \mathbf{S}_{t-1} + \mathbf{v}_t\mathbf{k}_t^\top &&\in \mathbb{R}^{d \times d}  \\
+        \mathbf{o}_t &= \mathbf{S}_t\mathbf{q}_t &&\in \mathbb{R}^d  
+    \end{align*}
+    % where {\color{red}$\mathbf{G}_t \in \mathbb{R}^{d \times d}$} is a data-dependent gate matrix. 
+
+    \textbf{Condition} for the matmul-based (chunkwise) parallel form (\cite{gla}):
+    \[{\color{red}\mathbf{G}_t = \boldsymbol{\beta}_t\boldsymbol{\alpha}_t^\top \in \mathbb{R}^{d\times d}, \quad \boldsymbol{\alpha}_t, \boldsymbol{\beta}_t \in \mathbb{R}^d}
+    \]
+
+    \begin{itemize}
+        \item Mamba-1 (\cite{Gu2023MambaLS}) does not conform to this structure, preventing the use of tensor cores.
+        \item It is common to set ${\color{red}\boldsymbol{\beta}_t = \mathbf{1}}$ in practice, examples: GLA (\cite{gla}), RWKV6 (\cite{rwkv6}), GSA (\cite{zhang2024gated}), HGRN2 (\cite{hgrn2}).
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}{Summary}
+    \begin{itemize}
+        \item Language modeling has a strong {\color{red}recency bias}.
+        \item Decay helps {\color{red}bridge the perplexity gap} between linear and softmax attention.
+        \item {\color{red}Fine-grained decay} enhances performance but poses scaling challenges.
+        \item {\color{red}Outer-product structure} enables efficient chunkwise training with fine-grained decay.
+    \end{itemize}
+\end{frame}
